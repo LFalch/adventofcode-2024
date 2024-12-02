@@ -1,19 +1,18 @@
 const std = @import("std");
-const read_num = @import("root.zig").read_num;
+const aoc = @import("aoc");
 
 pub fn main() !void {
-    const f = try std.fs.cwd().openFile("input.txt", .{ .mode = .read_only });
-    defer f.close();
-    var buf_reader = std.io.bufferedReader(f.reader());
-    const reader = buf_reader.reader();
+    var f = try aoc.read_input();
 
     var numSafe: u64 = 0;
 
-    big: while (true) {
+    while (!f.is_done()) {
+        var newLine = false;
         var isSafe = true;
         var lastNum: ?u8 = null;
         var direction: ?bool = null;
-        while (read_num(reader) catch |e| if (e == error.EndOfStream) break :big else return e) |num| {
+        while (!newLine) : (newLine = f.read_space()) {
+            const num = f.read_number(u8);
             if (!isSafe) continue;
             if (lastNum) |l_num| {
                 const diff: i9 = @as(i9, num) - l_num;

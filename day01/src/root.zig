@@ -1,19 +1,14 @@
 const std = @import("std");
-
-var buf: [4096]u8 = undefined;
+const aoc = @import("aoc");
 
 fn readFile(left: *std.ArrayList(i64), right: *std.ArrayList(i64)) !void {
-    const f = try std.fs.cwd().openFile("input.txt", .{ .mode = .read_only });
-    defer f.close();
-    var reader = std.io.bufferedReader(f.reader());
+    var data = try aoc.read_input();
 
-    while (true) {
-        const line = reader.reader().readUntilDelimiter(&buf, '\n') catch |e| switch (e) {
-            error.EndOfStream => break,
-            else => return e,
-        };
-        const l = try std.fmt.parseInt(i64, line[0..5], 10);
-        const r = try std.fmt.parseInt(i64, line[8 .. 8 + 5], 10);
+    while (!data.is_done()) {
+        const l = data.read_number(i64);
+        std.debug.assert(!data.read_space());
+        const r = data.read_number(i64);
+        std.debug.assert(data.read_space());
         try left.append(l);
         try right.append(r);
     }
@@ -37,9 +32,6 @@ pub fn do(f: anytype) !void {
     const sum = f(&left, &right);
 
     const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
 
-    try stdout.print("{d}\n", .{sum});
-    try bw.flush();
+    try stdout_file.print("{d}\n", .{sum});
 }
