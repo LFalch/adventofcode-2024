@@ -47,3 +47,20 @@ pub const FileData = struct {
         return out;
     }
 };
+
+pub const Timer = struct {
+    timestamp: i64,
+
+    pub fn start() Timer {
+        const ts = std.time.microTimestamp();
+        return .{
+            .timestamp = ts,
+        };
+    }
+
+    pub fn stop(self: @This()) void {
+        const now = std.time.microTimestamp();
+        const us = now - self.timestamp;
+        std.debug.print("Time: {d}µs\n", .{us});
+    }
+};

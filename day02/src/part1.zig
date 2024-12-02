@@ -3,6 +3,7 @@ const aoc = @import("aoc");
 
 pub fn main() !void {
     var f = try aoc.read_input();
+    const timer = aoc.Timer.start();
 
     var numSafe: u64 = 0;
 
@@ -30,5 +31,6 @@ pub fn main() !void {
             numSafe += 1;
         }
     }
+    timer.stop();
     try std.io.getStdOut().writer().print("{d}\n", .{numSafe});
 }

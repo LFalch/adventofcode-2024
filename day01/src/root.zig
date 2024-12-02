@@ -26,12 +26,15 @@ pub fn do(f: anytype) !void {
 
     try readFile(&left, &right);
 
+    const timer = aoc.Timer.start();
+
     std.mem.sort(i64, left.items, {}, comptime std.sort.asc(i64));
     std.mem.sort(i64, right.items, {}, comptime std.sort.asc(i64));
 
     const sum = f(&left, &right);
 
-    const stdout_file = std.io.getStdOut().writer();
+    timer.stop();
 
+    const stdout_file = std.io.getStdOut().writer();
     try stdout_file.print("{d}\n", .{sum});
 }
