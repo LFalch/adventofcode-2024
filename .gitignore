@@ -1,0 +1,10 @@
+.session
+input.txt
+demo.txt
+*.out
+*.o
+leaderboard/target
+leaderboard/test.json
+target/
+.zig-cache/
+zig-out/
