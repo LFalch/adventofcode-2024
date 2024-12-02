@@ -1,15 +1,15 @@
 const std = @import("std");
 const day1 = @import("root.zig");
 
-fn part2(left: *std.ArrayList(i64), right: *std.ArrayList(i64)) i128 {
-    var sum: i128 = 0;
+fn part2(left: *std.ArrayList(i32), right: *std.ArrayList(i32)) i128 {
+    var sum: i32 = 0;
 
     var j: usize = 0;
-    var lastEl: i64 = -1;
-    var lastProd: i128 = undefined;
+    var lastEl: i32 = -1;
+    var lastProd: i32 = undefined;
     for (left.items) |el| {
         if (lastEl != el) {
-            var multiplier: i64 = 0;
+            var multiplier: i32 = 0;
             while (j < right.items.len and right.items[j] < el) : (j += 1) {}
             while (j < right.items.len and right.items[j] == el) : (j += 1) {
                 multiplier += 1;
