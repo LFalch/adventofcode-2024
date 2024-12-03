@@ -1,7 +1,7 @@
 const std = @import("std");
 const day1 = @import("root.zig");
 
-fn part2(left: *std.ArrayList(i32), right: *std.ArrayList(i32)) i128 {
+fn part2(left: *std.ArrayList(i32), right: *std.ArrayList(i32)) i32 {
     var sum: i32 = 0;
 
     var j: usize = 0;
