@@ -19,8 +19,11 @@ fn next_ins(f: *aoc.FileData) ?enum { Do, Dont, Mul } {
 }
 
 pub fn main() !void {
-    var f = try aoc.read_input();
-    const timer = aoc.Timer.start();
+    try aoc.main_with_bench(u32, {}, solve);
+}
+
+fn solve(fd: aoc.FileData, _: void) u32 {
+    var f = fd;
 
     var mul_enabled = true;
     var sum: u32 = 0;
@@ -45,6 +48,5 @@ pub fn main() !void {
             },
         }
     }
-    timer.stop();
-    try std.io.getStdOut().writer().print("{d}\n", .{sum});
+    return sum;
 }

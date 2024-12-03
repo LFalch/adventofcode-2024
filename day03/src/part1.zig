@@ -2,8 +2,11 @@ const std = @import("std");
 const aoc = @import("aoc");
 
 pub fn main() !void {
-    var f = try aoc.read_input();
-    const timer = aoc.Timer.start();
+    try aoc.main_with_bench(u32, {}, solve);
+}
+
+fn solve(fd: aoc.FileData, _: void) u32 {
+    var f = fd;
     var sum: u32 = 0;
     while (std.mem.indexOf(u8, f.file_data, "mul(")) |i| {
         f.file_data = f.file_data[i + 4 ..];
@@ -14,6 +17,5 @@ pub fn main() !void {
 
         sum += @as(u32, l) * @as(u32, r);
     }
-    timer.stop();
-    try std.io.getStdOut().writer().print("{d}\n", .{sum});
+    return sum;
 }

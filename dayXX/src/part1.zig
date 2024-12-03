@@ -2,13 +2,15 @@ const std = @import("std");
 const aoc = @import("aoc");
 
 pub fn main() !void {
-    var gpa = std.heap.HeapAllocator.init();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
+    try aoc.main_with_bench(u32, .{gpa.allocator()}, solve);
+}
 
-    var f = try aoc.read_input();
+fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
+    const alloc = ctx[0];
+    var f = fd;
     // READ DATA
-    const timer = aoc.Timer.start();
     // CALCULATE RESULT
-    timer.stop();
-    try std.io.getStdOut().writer().print("{d}\n", .{0});
+    return 0;
 }
