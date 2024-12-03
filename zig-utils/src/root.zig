@@ -3,13 +3,19 @@ const testing = std.testing;
 
 var file_buf: [32 * 1024]u8 = undefined;
 
-pub fn read_input() !FileData {
-    const f = try std.fs.cwd().openFile("input.txt", .{ .mode = .read_only });
+pub fn read(path: []const u8) !FileData {
+    const f = try std.fs.cwd().openFile(path, .{ .mode = .read_only });
     defer f.close();
     const n = try f.readAll(&file_buf);
     return .{
         .file_data = file_buf[0..n],
     };
+}
+pub fn read_input() !FileData {
+    return read("input.txt");
+}
+pub fn read_demo() !FileData {
+    return read("demo.txt");
 }
 
 pub const FileData = struct {

@@ -18,7 +18,7 @@ fn solve(fd: aoc.FileData, _: void) u16 {
             const num = f.read_number(u8);
             if (lastNum) |l_num| {
                 const diff = @as(i8, @intCast(num)) - @as(i8, @intCast(l_num));
-                if (@abs(diff) == 0 or @abs(diff) > 3) isSafe = false;
+                if (diff == 0 or @abs(diff) > 3) isSafe = false;
                 const sign = diff > 0;
                 if (direction) |d| {
                     if (sign != d) isSafe = false;
@@ -26,7 +26,7 @@ fn solve(fd: aoc.FileData, _: void) u16 {
             }
             if (!isSafe) {
                 if (std.mem.indexOf(u8, f.file_data, "\n")) |i| {
-                    f.file_data = f.file_data[i..];
+                    f.file_data = f.file_data[i + 1 ..];
                 } else f.file_data = "";
                 break;
             }
