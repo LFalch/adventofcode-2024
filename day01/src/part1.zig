@@ -1,9 +1,9 @@
 const std = @import("std");
 const day1 = @import("root.zig");
 
-fn part1(left: *std.ArrayList(i32), right: *std.ArrayList(i32)) i32 {
+fn part1(left: *day1.List, right: *day1.List) i32 {
     var sum: i32 = 0;
-    for (left.items, right.items) |l, r| {
+    for (left.slice(), right.slice()) |l, r| {
         sum += @max(l, r) - @min(l, r);
     }
     return sum;
