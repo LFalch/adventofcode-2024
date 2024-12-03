@@ -46,6 +46,14 @@ pub const FileData = struct {
         self.file_data = self.file_data[n..];
         return out;
     }
+
+    pub fn accept(self: *FileData, s: []const u8) bool {
+        if (self.file_data.len < s.len) return false;
+        if (std.mem.eql(u8, self.file_data[0..s.len], s)) {
+            self.file_data = self.file_data[s.len..];
+            return true;
+        } else return false;
+    }
 };
 
 pub const Timer = struct {

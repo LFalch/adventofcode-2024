@@ -8,13 +8,9 @@ pub fn main() !void {
     while (std.mem.indexOf(u8, f.file_data, "mul(")) |i| {
         f.file_data = f.file_data[i + 4 ..];
         const l = f.read_number(u16);
-        if (f.file_data[0] != ',') continue else {
-            f.file_data = f.file_data[1..];
-        }
+        if (!f.accept(",")) continue;
         const r = f.read_number(u16);
-        if (f.file_data[0] != ')') continue else {
-            f.file_data = f.file_data[1..];
-        }
+        if (!f.accept(")")) continue;
 
         sum += @as(u32, l) * @as(u32, r);
     }
