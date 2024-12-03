@@ -1,16 +1,19 @@
 const std = @import("std");
 const aoc = @import("aoc");
 
-var mem_buf: [2048]u8 = undefined;
+var mem_buf: [16]u8 = undefined;
 
 pub fn main() !void {
     var gpa = std.heap.FixedBufferAllocator.init(&mem_buf);
-    const alloc = gpa.allocator();
 
-    var f = try aoc.read_input();
-    const timer = aoc.Timer.start();
+    try aoc.main_with_bench(u16, .{gpa.allocator()}, solve);
+}
 
-    var numSafe: u64 = 0;
+fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u16 {
+    const alloc = ctx[0];
+    var f = fd;
+
+    var numSafe: u16 = 0;
 
     while (!f.is_done()) {
         var list = std.ArrayList(u8).init(alloc);
@@ -18,7 +21,7 @@ pub fn main() !void {
 
         var newLine = false;
         while (!newLine) : (newLine = f.read_space()) {
-            try list.append(f.read_number(u8));
+            list.append(f.read_number(u8)) catch unreachable;
         }
 
         var unsafesRemoved: u8 = 0;
@@ -85,6 +88,5 @@ pub fn main() !void {
             numSafe += 1;
         }
     }
-    timer.stop();
-    try std.io.getStdOut().writer().print("{d}\n", .{numSafe});
+    return numSafe;
 }
