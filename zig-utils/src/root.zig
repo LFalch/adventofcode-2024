@@ -99,7 +99,9 @@ pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @
         timer.start();
         const calculated = f(fd, ctx);
         timer.stop();
-        std.debug.assert(answer == calculated);
+        if (answer != calculated) {
+            std.debug.panic("incorrect result during benchmark\n", .{});
+        }
     }
 }
 
