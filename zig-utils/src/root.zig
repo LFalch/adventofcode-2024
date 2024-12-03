@@ -71,7 +71,9 @@ pub const Timer = struct {
         const diff = now - self.timestamp;
         const ms = @divTrunc(diff, 1000);
         const us = @mod(diff, 1000);
-        std.debug.print("Time: {d}.{d:.3}ms\n", .{ ms, us });
+        var decimals: [3]u8 = undefined;
+        zeroFill(&decimals, us);
+        std.debug.print("Time: {d}.{s}ms\n", .{ ms, decimals });
     }
 };
 
