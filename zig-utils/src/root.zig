@@ -103,8 +103,8 @@ pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @
     }
 }
 
-const TIMES_TO_RUN = 1000;
-const OUTLIER_CUTOUT = 200;
+const TIMES_TO_RUN = 10_000;
+const OUTLIER_CUTOUT = (3 * TIMES_TO_RUN) / 10;
 
 fn zeroFill(buf: []u8, int: anytype) void {
     var n = int;
@@ -131,7 +131,7 @@ pub const AvgTimer = struct {
         std.mem.sortUnstable(u32, self.times[0..self.next_time], {}, std.sort.asc(u32));
         const times = self.times[OUTLIER_CUTOUT .. self.next_time - OUTLIER_CUTOUT];
 
-        var sum: i64 = 0;
+        var sum: i128 = 0;
         for (times) |time| {
             sum += time;
         }
