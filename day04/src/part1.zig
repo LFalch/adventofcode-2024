@@ -21,28 +21,7 @@ fn solve(fd: aoc.FileData, _: void) u32 {
         var samx: u2 = 0;
 
         for (0..width) |y| {
-            const c = table.get(x, y);
-            switch (c) {
-                'X' => {
-                    xmas = 1;
-                    if (samx == 3) count += 1;
-                    samx = 0;
-                },
-                'M' => {
-                    if (xmas == 1) xmas = 2 else xmas = 0;
-                    if (samx == 2) samx = 3 else samx = 0;
-                },
-                'A' => {
-                    if (samx == 1) samx = 2 else samx = 0;
-                    if (xmas == 2) xmas = 3 else xmas = 0;
-                },
-                'S' => {
-                    samx = 1;
-                    if (xmas == 3) count += 1;
-                    xmas = 0;
-                },
-                else => unreachable,
-            }
+            xmasamx(table.get(x, y), &xmas, &samx, &count);
         }
     }
     // diagonal
@@ -59,28 +38,7 @@ fn solve(fd: aoc.FileData, _: void) u32 {
             x += 1;
             y += 1;
         }) {
-            const c = table.get(x, y);
-            switch (c) {
-                'X' => {
-                    xmas = 1;
-                    if (samx == 3) count += 1;
-                    samx = 0;
-                },
-                'M' => {
-                    if (xmas == 1) xmas = 2 else xmas = 0;
-                    if (samx == 2) samx = 3 else samx = 0;
-                },
-                'A' => {
-                    if (samx == 1) samx = 2 else samx = 0;
-                    if (xmas == 2) xmas = 3 else xmas = 0;
-                },
-                'S' => {
-                    samx = 1;
-                    if (xmas == 3) count += 1;
-                    xmas = 0;
-                },
-                else => unreachable,
-            }
+            xmasamx(table.get(x, y), &xmas, &samx, &count);
         }
     }
     // diagonal 2
@@ -97,30 +55,33 @@ fn solve(fd: aoc.FileData, _: void) u32 {
             x += 1;
             y -%= 1;
         }) {
-            const c = table.get(x, y);
-            switch (c) {
-                'X' => {
-                    xmas = 1;
-                    if (samx == 3) count += 1;
-                    samx = 0;
-                },
-                'M' => {
-                    if (xmas == 1) xmas = 2 else xmas = 0;
-                    if (samx == 2) samx = 3 else samx = 0;
-                },
-                'A' => {
-                    if (samx == 1) samx = 2 else samx = 0;
-                    if (xmas == 2) xmas = 3 else xmas = 0;
-                },
-                'S' => {
-                    samx = 1;
-                    if (xmas == 3) count += 1;
-                    xmas = 0;
-                },
-                else => unreachable,
-            }
+            xmasamx(table.get(x, y), &xmas, &samx, &count);
         }
     }
 
     return count;
+}
+
+inline fn xmasamx(c: u8, xmas: *u2, samx: *u2, count: *u32) void {
+    switch (c) {
+        'X' => {
+            xmas.* = 1;
+            if (samx.* == 3) count.* += 1;
+            samx.* = 0;
+        },
+        'M' => {
+            if (xmas.* == 1) xmas.* = 2 else xmas.* = 0;
+            if (samx.* == 2) samx.* = 3 else samx.* = 0;
+        },
+        'A' => {
+            if (samx.* == 1) samx.* = 2 else samx.* = 0;
+            if (xmas.* == 2) xmas.* = 3 else xmas.* = 0;
+        },
+        'S' => {
+            samx.* = 1;
+            if (xmas.* == 3) count.* += 1;
+            xmas.* = 0;
+        },
+        else => unreachable,
+    }
 }

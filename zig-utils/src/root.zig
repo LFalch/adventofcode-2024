@@ -111,7 +111,7 @@ pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @
     }
 }
 
-const TIMES_TO_RUN = 10_000;
+const TIMES_TO_RUN = 100;
 const OUTLIER_CUTOUT = (3 * TIMES_TO_RUN) / 10;
 
 fn zeroFill(buf: []u8, int: anytype) void {
