@@ -18,6 +18,20 @@ fn lessThanRule(_: void, l: Rule, r: Rule) bool {
 fn compareRule(_: void, key: u8, mid_item: Rule) std.math.Order {
     return std.math.order(key, mid_item.before);
 }
+fn lessThanPageNr(sorted_rules: []const Rule, l: u8, r: u8) bool {
+    if (std.sort.binarySearch(Rule, r, sorted_rules, {}, compareRule)) |ri| {
+        var r_ind = ri;
+        while (r_ind > 0 and sorted_rules[r_ind - 1].before == r) {
+            r_ind -= 1;
+        }
+        while (r_ind < sorted_rules.len and sorted_rules[r_ind].before == r) : (r_ind += 1) {
+            const cant_be_before = sorted_rules[r_ind].after;
+            if (l == cant_be_before) return false;
+        }
+    }
+
+    return true;
+}
 
 fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
     const alloc = ctx[0];
@@ -51,22 +65,7 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
         std.debug.assert(f.read_space());
 
         // validate page
-        var valid = true;
-        for (page.items, 0..) |nr, i| {
-            if (std.sort.binarySearch(Rule, nr, rules.items, {}, compareRule)) |ri| {
-                var r_ind = ri;
-                while (r_ind > 0 and rules.items[r_ind - 1].before == nr) {
-                    r_ind -= 1;
-                }
-                while (r_ind < rules.items.len and rules.items[r_ind].before == nr) : (r_ind += 1) {
-                    const cant_be_before = rules.items[r_ind].after;
-                    if (std.mem.indexOf(u8, page.items[0..i], &[_]u8{cant_be_before})) |_| {
-                        valid = false;
-                        break;
-                    }
-                }
-            }
-        }
+        const valid = std.sort.isSorted(u8, page.items, rules.items, lessThanPageNr);
         if (valid) {
             const middle = page.items[page.items.len / 2];
             sum += middle;
