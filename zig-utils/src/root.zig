@@ -101,7 +101,9 @@ pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @
     var timer = AvgTimer.init();
     defer timer.deinit();
 
-    while (!timer.is_full()) {
+    const benchmark_start = std.time.milliTimestamp();
+
+    while (!timer.is_full() and (timer.next_time < 10 or (std.time.milliTimestamp() - benchmark_start < 2800))) {
         timer.start();
         const calculated = f(fd, ctx);
         timer.stop();
@@ -111,8 +113,7 @@ pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @
     }
 }
 
-const TIMES_TO_RUN = 1000;
-const OUTLIER_CUTOUT = (3 * TIMES_TO_RUN) / 10;
+const MAX_TIMES_TO_RUN = 10_000;
 
 fn zeroFill(buf: []u8, int: anytype) void {
     var n = int;
@@ -126,7 +127,7 @@ fn zeroFill(buf: []u8, int: anytype) void {
 
 pub const AvgTimer = struct {
     timestamp: i64,
-    times: [TIMES_TO_RUN]u32,
+    times: [MAX_TIMES_TO_RUN]u32,
     next_time: usize = 0,
 
     pub fn init() AvgTimer {
@@ -137,7 +138,8 @@ pub const AvgTimer = struct {
     }
     pub fn deinit(self: *AvgTimer) void {
         std.mem.sortUnstable(u32, self.times[0..self.next_time], {}, std.sort.asc(u32));
-        const times = self.times[OUTLIER_CUTOUT .. self.next_time - OUTLIER_CUTOUT];
+        const outlier_count = (3 * self.next_time) / 10;
+        const times = self.times[outlier_count .. self.next_time - outlier_count];
 
         var sum: i128 = 0;
         for (times) |time| {
@@ -159,7 +161,7 @@ pub const AvgTimer = struct {
     }
 
     pub fn is_full(self: *const AvgTimer) bool {
-        return self.next_time >= TIMES_TO_RUN;
+        return self.next_time >= MAX_TIMES_TO_RUN;
     }
 
     /// Do not run without checking `is_full`
