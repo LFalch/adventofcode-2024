@@ -12,6 +12,13 @@ const Rule = struct {
     after: u8,
 };
 
+fn lessThanRule(_: void, l: Rule, r: Rule) bool {
+    return std.sort.asc(u8)({}, l.before, r.before);
+}
+fn compareRule(_: void, key: u8, mid_item: Rule) std.math.Order {
+    return std.math.order(key, mid_item.before);
+}
+
 fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
     const alloc = ctx[0];
     var f = fd;
@@ -27,6 +34,9 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
         rules.append(.{ .before = before, .after = after }) catch unreachable;
     }
     std.debug.assert(f.read_space());
+
+    std.mem.sortUnstable(Rule, rules.items, {}, lessThanRule);
+
     var sum: u32 = 0;
     nr_loop: while (true) {
         var page = std.ArrayList(u8).init(alloc);
@@ -46,17 +56,20 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
         while (i < page.items.len) {
             const nr = page.items[i];
 
-            for (rules.items) |rule| {
-                if (rule.before == nr) {
-                    for (page.items[0..i], 0..) |prev_nr, j| {
-                        if (rule.after == prev_nr) {
-                            valid = false;
-                            // prev_nr should be after
-
-                            _ = page.orderedRemove(j);
-                            page.insert(i, prev_nr) catch unreachable;
-                            i -= 1;
-                        }
+            if (std.sort.binarySearch(Rule, nr, rules.items, {}, compareRule)) |ri| {
+                var r_ind = ri;
+                while (r_ind > 0 and rules.items[r_ind - 1].before == nr) {
+                    r_ind -= 1;
+                }
+                while (r_ind < rules.items.len and rules.items[r_ind].before == nr) : (r_ind += 1) {
+                    const cant_be_before = rules.items[r_ind].after;
+                    // assumes only one entry breaks each rule
+                    if (std.mem.indexOf(u8, page.items[0..i], &[_]u8{cant_be_before})) |j| {
+                        valid = false;
+                        // prev_nr should be after
+                        const prev_nr = page.orderedRemove(j);
+                        page.insert(i, prev_nr) catch unreachable;
+                        i -= 1;
                     }
                 }
             }
