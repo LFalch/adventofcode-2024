@@ -3,19 +3,13 @@ const testing = std.testing;
 
 var file_buf: [32 * 1024]u8 = undefined;
 
-pub fn read(path: []const u8) !FileData {
+fn read(path: []const u8) !FileData {
     const f = try std.fs.cwd().openFile(path, .{ .mode = .read_only });
     defer f.close();
     const n = try f.readAll(&file_buf);
     return .{
         .file_data = file_buf[0..n],
     };
-}
-pub fn read_input() !FileData {
-    return read("input.txt");
-}
-pub fn read_demo() !FileData {
-    return read("demo.txt");
 }
 
 pub const FileData = struct {
@@ -85,9 +79,21 @@ pub const Timer = struct {
 
 /// Main function that does a benchmark if the answer is given in cmdargs
 pub fn main_with_bench(answer_type: type, ctx: anytype, f: fn (FileData, @TypeOf(ctx)) answer_type) !void {
-    const fd = try read_input();
+    var input_file: ?[]u8 = null;
+    var answer_arg: ?answer_type = null;
     if (std.os.argv.len > 1) {
-        const answer = try std.fmt.parseInt(answer_type, std.mem.span(std.os.argv[1]), 10);
+        for (std.os.argv[1..]) |arg| {
+            const buf = std.mem.span(arg);
+            const ans = std.fmt.parseInt(answer_type, buf, 10) catch {
+                input_file = buf;
+                continue;
+            };
+            answer_arg = ans;
+        }
+    }
+
+    const fd = try read(if (input_file) |p| p else "input.txt");
+    if (answer_arg) |answer| {
         try benchmark(fd, answer, ctx, f);
     } else {
         const timer = Timer.start();
@@ -108,7 +114,7 @@ pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @
         const calculated = f(fd, ctx);
         timer.stop();
         if (answer != calculated) {
-            std.debug.panic("incorrect result during benchmark\n", .{});
+            std.debug.panic("incorrect result during benchmark, got {d}\n", .{calculated});
         }
     }
 }
