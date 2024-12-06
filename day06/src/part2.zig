@@ -13,30 +13,11 @@ fn solve(fd: aoc.FileData, alloc: std.mem.Allocator) u32 {
     defer table.deinit(alloc);
 
     const pi_start = std.mem.indexOf(u8, table.data, "^") orelse unreachable;
-    const px: i16 = @intCast(pi_start % table.width);
-    const py: i16 = @intCast(@divTrunc(pi_start, table.width));
+    const px_start: i16 = @intCast(pi_start % table.width);
+    const py_start: i16 = @intCast(@divTrunc(pi_start, table.width));
 
     var sum: u32 = 0;
 
-    set_xs(table, px, py);
-    for (0..table.width - 1) |y| {
-        for (0..table.width - 1) |x| {
-            if (x == px and y == py) continue;
-            if (table.get(x, y) == 'X') {
-                const inner_table = table.copy(alloc);
-                defer inner_table.deinit(alloc);
-                inner_table.get_mut(x, y).* = '#';
-                if (travel(inner_table, px, py)) {
-                    sum += 1;
-                }
-            }
-        }
-    }
-
-    return sum;
-}
-
-fn set_xs(table: Table, px_start: i16, py_start: i16) void {
     var dx: i8 = 0;
     var dy: i8 = -1;
     var px: i16 = px_start;
@@ -56,15 +37,25 @@ fn set_xs(table: Table, px_start: i16, py_start: i16) void {
             std.mem.swap(i8, &dx, &dy);
             continue;
         }
+        if (c.* == '.') {
+            const inner_table = table.copy(alloc);
+            defer inner_table.deinit(alloc);
+            inner_table.get_mut(@intCast(new_px), @intCast(new_py)).* = '#';
+            if (travel(inner_table, px, py, dx, dy)) {
+                sum += 1;
+            }
+            c.* = 'X';
+        }
         px = new_px;
         py = new_py;
-        c.* = 'X';
     }
+
+    return sum;
 }
 
-fn travel(table: Table, px_start: i16, py_start: i16) bool {
-    var dx: i8 = 0;
-    var dy: i8 = -1;
+fn travel(table: Table, px_start: i16, py_start: i16, dx_start: i8, dy_start: i8) bool {
+    var dx: i8 = dx_start;
+    var dy: i8 = dy_start;
     var px: i16 = px_start;
     var py: i16 = py_start;
 
