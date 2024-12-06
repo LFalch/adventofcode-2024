@@ -19,6 +19,7 @@ fn solve(fd: aoc.FileData, alloc: std.mem.Allocator) u32 {
     var px: i16 = @intCast(pi_start % table.width);
     var py: i16 = @intCast(@divTrunc(pi_start, table.width));
 
+    var count: u32 = 1;
     table.get_mut(@intCast(px), @intCast(py)).* = 'X';
     while (true) {
         const new_px = px + dx;
@@ -36,8 +37,11 @@ fn solve(fd: aoc.FileData, alloc: std.mem.Allocator) u32 {
         }
         px = new_px;
         py = new_py;
-        c.* = 'X';
+        if (c.* != 'X') {
+            count += 1;
+            c.* = 'X';
+        }
     }
 
-    return @intCast(std.mem.count(u8, table.data, "X"));
+    return count;
 }
