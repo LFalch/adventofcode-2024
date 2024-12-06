@@ -3,11 +3,14 @@ const aoc = @import("aoc");
 const Table = @import("Table.zig");
 
 pub fn main() !void {
-    try aoc.main_with_bench(u32, {}, solve);
+    var a = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer a.deinit();
+    try aoc.main_with_bench(u32, a.allocator(), solve);
 }
 
-fn solve(fd: aoc.FileData, _: void) u32 {
-    const table = Table.init(fd);
+fn solve(fd: aoc.FileData, alloc: std.mem.Allocator) u32 {
+    const table = Table.init(alloc, fd);
+    defer table.deinit(alloc);
 
     var dx: i8 = 0;
     var dy: i8 = -1;

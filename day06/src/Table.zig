@@ -1,17 +1,23 @@
 const std = @import("std");
 const aoc = @import("aoc");
 
-var data_buf: [20_000]u8 = undefined;
-
 data: []u8,
 width: usize,
 
-pub inline fn init(fd: aoc.FileData) @This() {
+pub fn init(alloc: std.mem.Allocator, fd: aoc.FileData) @This() {
     const width = std.mem.indexOf(u8, fd.file_data, "\n") orelse unreachable;
-    @memcpy(data_buf[0..fd.file_data.len], fd.file_data);
     return .{
         .width = width + 1,
-        .data = data_buf[0..fd.file_data.len],
+        .data = alloc.dupe(u8, fd.file_data) catch unreachable,
+    };
+}
+pub fn deinit(self: @This(), alloc: std.mem.Allocator) void {
+    alloc.free(self.data);
+}
+pub fn copy(self: *const @This(), alloc: std.mem.Allocator) @This() {
+    return .{
+        .width = self.width,
+        .data = alloc.dupe(u8, self.data) catch unreachable,
     };
 }
 
