@@ -40,3 +40,11 @@ zig build run1 -Doptimize=ReleaseFast -- 4281
 echo "Part 2"
 zig build run2 -Doptimize=ReleaseFast -- 5466
 cd ..
+
+echo "Day 6"
+cd day06
+echo "Part 1"
+zig build run1 -Doptimize=ReleaseFast -- 4778
+echo "Part 2"
+zig build run2 -Doptimize=ReleaseFast -- 1618
+cd ..
