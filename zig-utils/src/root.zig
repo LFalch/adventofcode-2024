@@ -109,7 +109,7 @@ pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @
 
     const benchmark_start = std.time.milliTimestamp();
 
-    while (!timer.is_full() and (timer.next_time < 10 or (std.time.milliTimestamp() - benchmark_start < 2800))) {
+    while (!timer.is_full() and (timer.next_time < 10 or (std.time.milliTimestamp() - benchmark_start < MAX_BENCHMARK_TIME_MS))) {
         timer.start();
         const calculated = f(fd, ctx);
         timer.stop();
@@ -120,6 +120,7 @@ pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @
 }
 
 const MAX_TIMES_TO_RUN = 10_000;
+const MAX_BENCHMARK_TIME_MS = 4_800;
 
 fn zeroFill(buf: []u8, int: anytype) void {
     var n = int;
