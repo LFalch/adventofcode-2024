@@ -28,23 +28,31 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u64 {
                 break;
             }
         }
-        const num_op_combinations = std.math.powi(usize, 3, operands.items.len - 1) catch unreachable;
-        for (0..num_op_combinations + 1) |n| {
-            var sum: u64 = operands.items[0];
-            var cur_operator = n;
-            for (operands.items[1..]) |next_operand| {
-                switch (cur_operator % 3) {
-                    0 => sum += next_operand,
-                    1 => sum *= next_operand,
-                    2 => sum = concat(sum, next_operand),
-                    else => unreachable,
+        const concat_op_places = @as(usize, 1) << @as(u5, @intCast(operands.items.len - 1));
+        outer: for (0..concat_op_places) |concat_place| {
+            const arith_op_combinations = @as(usize, 1) << @as(u5, @intCast(operands.items.len - 1 - @popCount(concat_place)));
+            for (0..arith_op_combinations) |arith_ops| {
+                var sum: u64 = operands.items[0];
+                var cur_arith = arith_ops;
+                var cur_concat = concat_place;
+                for (operands.items[1..]) |next_operand| {
+                    if (cur_concat & 1 != 0) {
+                        sum = concat(sum, next_operand);
+                    } else {
+                        switch (cur_arith & 1) {
+                            0 => sum += next_operand,
+                            1 => sum *= next_operand,
+                            else => unreachable,
+                        }
+                        cur_arith >>= 1;
+                    }
+                    cur_concat >>= 1;
+                    if (sum > exp_result) break;
                 }
-                if (sum > exp_result) break;
-                cur_operator /= 3;
-            }
-            if (sum == exp_result) {
-                count += exp_result;
-                break;
+                if (sum == exp_result) {
+                    count += exp_result;
+                    break :outer;
+                }
             }
         }
     }
