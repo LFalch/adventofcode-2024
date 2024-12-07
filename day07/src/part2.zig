@@ -2,52 +2,62 @@ const std = @import("std");
 const aoc = @import("aoc");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer gpa.deinit();
     var pool: std.Thread.Pool = undefined;
     try pool.init(.{ .allocator = gpa.allocator() });
     defer pool.deinit();
     try aoc.main_with_bench(u64, &pool, solve);
 }
 
+const Equation = struct {
+    result: u64,
+    operands: std.BoundedArray(u16, 16),
+};
+
 fn solve(fd: aoc.FileData, pool: *std.Thread.Pool) u64 {
     var f = fd;
-    const alloc = pool.allocator;
+
+    var equations = std.BoundedArray(Equation, 1000){};
 
     var count = std.atomic.Value(u64).init(0);
     var wg = std.Thread.WaitGroup{};
 
     while (true) {
+        var equation = equations.addOne() catch unreachable;
         const exp_result = f.read_number(u64);
         if (exp_result == 0) break;
+        equation.result = exp_result;
         std.debug.assert(f.accept(":"));
         std.debug.assert(!f.read_space());
 
-        var operands = std.ArrayList(u32).init(alloc);
+        equation.operands = std.BoundedArray(u16, 16){};
         while (true) {
-            const op = f.read_number(u32);
-            operands.append(op) catch unreachable;
+            const op = f.read_number(u16);
+            equation.operands.append(op) catch unreachable;
             if (f.read_space()) {
                 break;
             }
         }
-        pool.spawnWg(&wg, work, .{ operands, exp_result, &count });
+        pool.spawnWg(&wg, work, .{ equation, &count });
     }
     pool.waitAndWork(&wg);
 
     return count.load(.acquire);
 }
 
-fn work(operands: std.ArrayList(u32), exp_result: u64, count: *std.atomic.Value(u64)) void {
-    defer operands.deinit();
-    const concat_op_places = @as(usize, 1) << @as(u5, @intCast(operands.items.len - 1));
+fn work(equation: *Equation, count: *std.atomic.Value(u64)) void {
+    const operands = equation.operands.slice();
+    const exp_result = equation.result;
+
+    const concat_op_places = @as(usize, 1) << @as(u5, @intCast(operands.len - 1));
     for (0..concat_op_places) |concat_place| {
-        const arith_op_combinations = @as(usize, 1) << @as(u5, @intCast(operands.items.len - 1 - @popCount(concat_place)));
+        const arith_op_combinations = @as(usize, 1) << @as(u5, @intCast(operands.len - 1 - @popCount(concat_place)));
         for (0..arith_op_combinations) |arith_ops| {
-            var sum: u64 = operands.items[0];
+            var sum: u64 = operands[0];
             var cur_arith = arith_ops;
             var cur_concat = concat_place;
-            for (operands.items[1..]) |next_operand| {
+            for (operands[1..]) |next_operand| {
                 if (cur_concat & 1 != 0) {
                     sum = concat(sum, next_operand);
                 } else {
