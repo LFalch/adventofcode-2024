@@ -37,7 +37,6 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) usize {
     outer: while (fid > 0) : (fid -= 1) {
         while (disk.items[j] != fid) j -= 1;
         var i = j;
-        // TODO: removing i > 0 is probably fine, since that is where file 0 resides and we won't go there
         while (disk.items[i - 1] == fid) i -= 1;
         const end = j + 1;
         j = i - 1;
@@ -59,9 +58,8 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) usize {
             }
         }
 
-        for (i..end) |pos| {
-            checksum += fid * pos;
-        }
+        // sum_(n=a)^(b - 1) n = 1/2 (b - a) (a + b - 1)
+        checksum += fid * (((end - i) * (i + end - 1)) / 2);
     }
 
     return checksum;
