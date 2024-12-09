@@ -8,5 +8,7 @@ pub fn main() !void {
 }
 
 fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
-    // copy part 1 in here
+    _ = fd;
+    _ = ctx;
+    return 0;
 }
