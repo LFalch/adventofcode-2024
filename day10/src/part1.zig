@@ -31,8 +31,9 @@ const Pos = struct { i8, i8 };
 const PosWithHeight = struct { i8, i8, u8 };
 
 fn check_trail_score(fd: aoc.FileData, w: usize, sx: i8, sy: i8, alloc: std.mem.Allocator) u32 {
-    var visited = std.ArrayList(Pos).initCapacity(alloc, 32) catch unreachable;
-    defer visited.deinit();
+    var grid = alloc.dupe(u8, fd.file_data) catch unreachable;
+    defer alloc.free(grid);
+
     var next = std.ArrayList(PosWithHeight).initCapacity(alloc, 16) catch unreachable;
     defer next.deinit();
     next.append(.{ sx, sy, '0' }) catch unreachable;
@@ -40,29 +41,27 @@ fn check_trail_score(fd: aoc.FileData, w: usize, sx: i8, sy: i8, alloc: std.mem.
     var score: u32 = 0;
 
     while (next.popOrNull()) |p| {
-        const this_h = fd.file_data[index(p[0], p[1], w).?];
+        const pi = index(p[0], p[1], w).?;
+        const this_h = grid[pi];
         if (this_h == p[2]) {
-            visited.append(.{ p[0], p[1] }) catch unreachable;
+            grid[pi] = '.';
             if (this_h == '9') {
                 score += 1;
                 continue;
             }
             const nh = this_h + 1;
-            if (check(p[0] + 1, p[1], nh, w, &visited)) |n| next.append(n) catch unreachable;
-            if (check(p[0] - 1, p[1], nh, w, &visited)) |n| next.append(n) catch unreachable;
-            if (check(p[0], p[1] + 1, nh, w, &visited)) |n| next.append(n) catch unreachable;
-            if (check(p[0], p[1] - 1, nh, w, &visited)) |n| next.append(n) catch unreachable;
+            if (check(p[0] + 1, p[1], nh, w)) |n| next.append(n) catch unreachable;
+            if (check(p[0] - 1, p[1], nh, w)) |n| next.append(n) catch unreachable;
+            if (check(p[0], p[1] + 1, nh, w)) |n| next.append(n) catch unreachable;
+            if (check(p[0], p[1] - 1, nh, w)) |n| next.append(n) catch unreachable;
         }
     }
 
     return score;
 }
 
-fn check(x: i8, y: i8, h: u8, w: usize, visited: *const std.ArrayList(Pos)) ?PosWithHeight {
+fn check(x: i8, y: i8, h: u8, w: usize) ?PosWithHeight {
     if (x >= 0 and y >= 0 and x < w - 1 and y < w - 1) {
-        for (visited.items) |p| {
-            if (p[0] == x and p[1] == y) return null;
-        }
         return .{ x, y, h };
     } else return null;
 }
