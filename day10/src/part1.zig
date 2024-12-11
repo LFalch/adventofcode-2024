@@ -34,7 +34,7 @@ fn check_trail_score(fd: aoc.FileData, w: usize, sx: i8, sy: i8, alloc: std.mem.
     var grid = alloc.dupe(u8, fd.file_data) catch unreachable;
     defer alloc.free(grid);
 
-    var next = std.ArrayList(PosWithHeight).initCapacity(alloc, 16) catch unreachable;
+    var next = std.ArrayList(PosWithHeight).initCapacity(alloc, 32) catch unreachable;
     defer next.deinit();
     next.append(.{ sx, sy, '0' }) catch unreachable;
 
