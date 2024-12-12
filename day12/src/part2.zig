@@ -12,6 +12,36 @@ const RIGHT: Visited = 2;
 const UP: Visited = 4;
 const DOWN: Visited = 8;
 const Visited = u4;
+const Coords = packed struct { x: u8, y: u8 };
+const VisitedEntry = struct { i: u16, v: Visited };
+
+fn add(c: Coords, comptime dir: Visited) Coords {
+    return switch (dir) {
+        LEFT => .{ .x = c.x -% 1, .y = c.y },
+        RIGHT => .{ .x = c.x + 1, .y = c.y },
+        UP => .{ .x = c.x, .y = c.y -% 1 },
+        DOWN => .{ .x = c.x, .y = c.y + 1 },
+        else => @compileError("invalid direction"),
+    };
+}
+fn neg(comptime dir: Visited) Visited {
+    return switch (dir) {
+        LEFT => RIGHT,
+        RIGHT => LEFT,
+        UP => DOWN,
+        DOWN => UP,
+        else => @compileError("invalid direction"),
+    };
+}
+fn hat(comptime dir: Visited) Visited {
+    return switch (dir) {
+        RIGHT => UP,
+        UP => LEFT,
+        LEFT => DOWN,
+        DOWN => RIGHT,
+        else => @compileError("invalid direction"),
+    };
+}
 
 fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
     const alloc = ctx[0];
@@ -23,78 +53,35 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
 
     for (0..w) |y| {
         for (0..w) |x| {
-            const sx: u8 = @intCast(x);
-            const sy: u8 = @intCast(y);
-            const plot_type = grid[index(sx, sy, w).?];
+            const s = Coords{ .x = @intCast(x), .y = @intCast(y) };
+            const plot_type = grid[index(s, w).?];
             if (plot_type == '.') continue;
-            var area: u32 = 0;
             var sides: u32 = 0;
-            var visited = std.AutoArrayHashMap(struct { u8, u8 }, Visited).init(alloc);
-            defer visited.deinit();
-            var nexts = std.ArrayList(struct { u8, u8 }).init(alloc);
+            var visited = std.MultiArrayList(VisitedEntry){};
+            defer visited.deinit(alloc);
+            visited.setCapacity(alloc, 256) catch unreachable;
+            var nexts = std.ArrayList(Coords).initCapacity(alloc, 128) catch unreachable;
             defer nexts.deinit();
-            nexts.append(.{ sx, sy }) catch unreachable;
+            nexts.append(s) catch unreachable;
 
-            while (nexts.popOrNull()) |next| {
-                if (visited.get(next) != null) continue;
+            while (nexts.popOrNull()) |c| {
+                if (std.mem.indexOfScalar(u16, visited.items(.i), @bitCast(c))) |_| continue;
+
                 var v: Visited = 0;
+                check(c, w, grid, plot_type, LEFT, &sides, &nexts, &visited, &v);
+                check(c, w, grid, plot_type, RIGHT, &sides, &nexts, &visited, &v);
+                check(c, w, grid, plot_type, DOWN, &sides, &nexts, &visited, &v);
+                check(c, w, grid, plot_type, UP, &sides, &nexts, &visited, &v);
 
-                const cx = next[0];
-                const cy = next[1];
-                area += 1;
-
-                if (check(cx -% 1, cy, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else {
-                    v |= LEFT;
-                    var n: u2 = 0;
-                    if (check_edge(visited.get(.{ cx, cy + 1 }), LEFT)) n += 1;
-                    if (check_edge(visited.get(.{ cx, cy -% 1 }), LEFT)) n += 1;
-                    switch (n) {
-                        0 => sides += 1,
-                        2 => sides -= 1,
-                        else => {},
-                    }
-                }
-                if (check(cx + 1, cy, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else {
-                    v |= RIGHT;
-                    var n: u2 = 0;
-                    if (check_edge(visited.get(.{ cx, cy + 1 }), RIGHT)) n += 1;
-                    if (check_edge(visited.get(.{ cx, cy -% 1 }), RIGHT)) n += 1;
-                    switch (n) {
-                        0 => sides += 1,
-                        2 => sides -= 1,
-                        else => {},
-                    }
-                }
-                if (check(cx, cy -% 1, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else {
-                    v |= UP;
-                    var n: u2 = 0;
-                    if (check_edge(visited.get(.{ cx + 1, cy }), UP)) n += 1;
-                    if (check_edge(visited.get(.{ cx -% 1, cy }), UP)) n += 1;
-                    switch (n) {
-                        0 => sides += 1,
-                        2 => sides -= 1,
-                        else => {},
-                    }
-                }
-                if (check(cx, cy + 1, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else {
-                    v |= DOWN;
-                    var n: u2 = 0;
-                    if (check_edge(visited.get(.{ cx + 1, cy }), DOWN)) n += 1;
-                    if (check_edge(visited.get(.{ cx -% 1, cy }), DOWN)) n += 1;
-                    switch (n) {
-                        0 => sides += 1,
-                        2 => sides -= 1,
-                        else => {},
-                    }
-                }
-                visited.put(next, v) catch unreachable;
+                visited.append(alloc, .{ .i = @bitCast(c), .v = v }) catch unreachable;
             }
 
             // mark as counted
-            for (visited.keys()) |pos| {
-                grid[index(pos[0], pos[1], w).?] = '.';
+            for (visited.items(.i)) |pos| {
+                grid[index(@bitCast(pos), w).?] = '.';
             }
 
+            const area: u32 = @intCast(visited.len);
             total += area * sides;
         }
     }
@@ -102,19 +89,32 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
     return total;
 }
 
-fn check_edge(v: ?Visited, comptime dir: Visited) bool {
-    return if (v) |i| i & dir != 0 else false;
+fn check_edge(visited: *const std.MultiArrayList(VisitedEntry), i: Coords, comptime dir: Visited) bool {
+    return if (std.mem.indexOfScalar(u16, visited.items(.i), @bitCast(i))) |in| visited.items(.v)[in] & dir != 0 else false;
 }
 
-fn check(x: u8, y: u8, w: usize, grid: []const u8, c: u8) ?struct { u8, u8 } {
-    if (index(x, y, w)) |i| {
-        if (grid[i] != c) return null;
-        return .{ x, y };
-    } else return null;
+fn check(c: Coords, w: usize, grid: []const u8, letter: u8, comptime dir: Visited, sides: *u32, nexts: *std.ArrayList(Coords), visited: *std.MultiArrayList(VisitedEntry), v: *Visited) void {
+    const neighbour = add(c, dir);
+    if (index(neighbour, w)) |i| {
+        if (grid[i] == letter) {
+            nexts.append(neighbour) catch unreachable;
+            return;
+        }
+    }
+
+    v.* |= dir;
+    var n: u2 = 0;
+    if (check_edge(visited, add(c, hat(dir)), dir)) n += 1;
+    if (check_edge(visited, add(c, neg(hat(dir))), dir)) n += 1;
+    switch (n) {
+        0 => sides.* += 1,
+        2 => sides.* -= 1,
+        else => {},
+    }
 }
 
-fn index(x: u8, y: u8, w: usize) ?usize {
-    if (x < w and y < w) {
-        return @as(usize, @intCast(x)) + @as(usize, @intCast(y)) * (w + 1);
+fn index(c: Coords, w: usize) ?usize {
+    if (c.x < w and c.y < w) {
+        return @as(usize, @intCast(c.x)) + @as(usize, @intCast(c.y)) * (w + 1);
     } else return null;
 }
