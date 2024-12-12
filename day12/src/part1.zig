@@ -7,6 +7,8 @@ pub fn main() !void {
     try aoc.main_with_bench(u32, .{gpa.allocator()}, solve);
 }
 
+const Coords = packed struct { x: u8, y: u8 };
+
 fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
     const alloc = ctx[0];
     const grid = alloc.dupe(u8, fd.file_data) catch unreachable;
@@ -21,43 +23,40 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
             const sy: u8 = @intCast(y);
             const plot_type = grid[index(sx, sy, w).?];
             if (plot_type == '.') continue;
-            var area: u32 = 0;
             var perimeter: u32 = 0;
-            var visited = std.AutoArrayHashMap(struct { u8, u8 }, void).init(alloc);
+            var visited = std.ArrayList(u16).initCapacity(alloc, 256) catch unreachable;
             defer visited.deinit();
-            var nexts = std.ArrayList(struct { u8, u8 }).init(alloc);
+            var nexts = std.ArrayList(Coords).initCapacity(alloc, 128) catch unreachable;
             defer nexts.deinit();
-            nexts.append(.{ sx, sy }) catch unreachable;
+            nexts.append(.{ .x = sx, .y = sy }) catch unreachable;
 
-            while (nexts.popOrNull()) |next| {
-                if ((visited.getOrPut(next) catch unreachable).found_existing) continue;
+            while (nexts.popOrNull()) |c| {
+                const cs: u16 = @bitCast(c);
+                if (std.mem.indexOfScalar(u16, visited.items, cs)) |_| continue;
+                visited.append(cs) catch unreachable;
 
-                const cx = next[0];
-                const cy = next[1];
-                area += 1;
-
-                if (check(cx -% 1, cy, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else perimeter += 1;
-                if (check(cx + 1, cy, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else perimeter += 1;
-                if (check(cx, cy -% 1, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else perimeter += 1;
-                if (check(cx, cy + 1, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else perimeter += 1;
+                if (check(c.x -% 1, c.y, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else perimeter += 1;
+                if (check(c.x + 1, c.y, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else perimeter += 1;
+                if (check(c.x, c.y -% 1, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else perimeter += 1;
+                if (check(c.x, c.y + 1, w, grid, plot_type)) |p| nexts.append(p) catch unreachable else perimeter += 1;
             }
 
-            // cleanup
-            for (visited.keys()) |pos| {
-                grid[index(pos[0], pos[1], w).?] = '.';
-            }
+            total += @as(u32, @intCast(visited.items.len)) * perimeter;
 
-            total += area * perimeter;
+            for (visited.items) |cs| {
+                const pos: Coords = @bitCast(cs);
+                grid[index(pos.x, pos.y, w).?] = '.';
+            }
         }
     }
 
     return total;
 }
 
-fn check(x: u8, y: u8, w: usize, grid: []const u8, c: u8) ?struct { u8, u8 } {
+fn check(x: u8, y: u8, w: usize, grid: []const u8, c: u8) ?Coords {
     if (index(x, y, w)) |i| {
         if (grid[i] != c) return null;
-        return .{ x, y };
+        return .{ .x = x, .y = y };
     } else return null;
 }
 
