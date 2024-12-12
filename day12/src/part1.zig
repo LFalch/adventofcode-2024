@@ -16,6 +16,10 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
     const w = std.mem.indexOfScalar(u8, grid, '\n').?;
 
     var total: u32 = 0;
+    var visited = std.ArrayList(u16).initCapacity(alloc, 256) catch unreachable;
+    defer visited.deinit();
+    var nexts = std.ArrayList(Coords).initCapacity(alloc, 128) catch unreachable;
+    defer nexts.deinit();
 
     for (0..w) |y| {
         for (0..w) |x| {
@@ -24,10 +28,8 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
             const plot_type = grid[index(sx, sy, w).?];
             if (plot_type == '.') continue;
             var perimeter: u32 = 0;
-            var visited = std.ArrayList(u16).initCapacity(alloc, 256) catch unreachable;
-            defer visited.deinit();
-            var nexts = std.ArrayList(Coords).initCapacity(alloc, 128) catch unreachable;
-            defer nexts.deinit();
+            defer visited.clearRetainingCapacity();
+            defer nexts.clearRetainingCapacity();
             nexts.append(.{ .x = sx, .y = sy }) catch unreachable;
 
             while (nexts.popOrNull()) |c| {

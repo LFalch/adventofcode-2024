@@ -50,6 +50,11 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
     const w = std.mem.indexOfScalar(u8, grid, '\n').?;
 
     var total: u32 = 0;
+    var visited = std.MultiArrayList(VisitedEntry){};
+    defer visited.deinit(alloc);
+    visited.setCapacity(alloc, 256) catch unreachable;
+    var nexts = std.ArrayList(Coords).initCapacity(alloc, 128) catch unreachable;
+    defer nexts.deinit();
 
     for (0..w) |y| {
         for (0..w) |x| {
@@ -57,11 +62,8 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
             const plot_type = grid[index(s, w).?];
             if (plot_type == '.') continue;
             var sides: u32 = 0;
-            var visited = std.MultiArrayList(VisitedEntry){};
-            defer visited.deinit(alloc);
-            visited.setCapacity(alloc, 256) catch unreachable;
-            var nexts = std.ArrayList(Coords).initCapacity(alloc, 128) catch unreachable;
-            defer nexts.deinit();
+            defer visited.resize(alloc, 0) catch unreachable;
+            defer nexts.clearRetainingCapacity();
             nexts.append(s) catch unreachable;
 
             while (nexts.popOrNull()) |c| {
@@ -93,7 +95,7 @@ fn check_edge(visited: *const std.MultiArrayList(VisitedEntry), i: Coords, compt
     return if (std.mem.indexOfScalar(u16, visited.items(.i), @bitCast(i))) |in| visited.items(.v)[in] & dir != 0 else false;
 }
 
-fn check(c: Coords, w: usize, grid: []const u8, letter: u8, comptime dir: Visited, sides: *u32, nexts: *std.ArrayList(Coords), visited: *std.MultiArrayList(VisitedEntry), v: *Visited) void {
+fn check(c: Coords, w: usize, grid: []const u8, letter: u8, comptime dir: Visited, sides: *u32, nexts: *std.ArrayList(Coords), visited: *const std.MultiArrayList(VisitedEntry), v: *Visited) void {
     const neighbour = add(c, dir);
     if (index(neighbour, w)) |i| {
         if (grid[i] == letter) {
