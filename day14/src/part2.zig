@@ -34,8 +34,9 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
         robots.append(.{ .x = x, .y = y, .vx = vx, .vy = vy }) catch unreachable;
     }
 
+    var longest_stem: u32 = 0;
     var n: u32 = 0;
-    while (true) : (n += 1) {
+    while (longest_stem < 15) : (n += 1) {
         const grid = alloc.dupe(u8, ("." ** 101 ++ "\n") ** 103) catch unreachable;
         defer alloc.free(grid);
         for (robots.items) |*robot| {
@@ -43,17 +44,18 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
             robot.y = @intCast(@mod(@as(i16, robot.y) + robot.vy, 103));
             grid[robot.x + 102 * @as(u16, robot.y)] = '#';
         }
-        std.debug.print("{d}:\n{s}\n", .{ n + 1, grid });
-        const s = std.io.getStdIn().reader().readUntilDelimiterOrEof(grid, '\n') catch unreachable;
-        if (s) |buf| {
-            const skip = std.fmt.parseInt(u32, buf, 10) catch continue;
-            for (0..skip - 1) |_| {
-                for (robots.items) |*robot| {
-                    robot.x = @intCast(@mod(@as(i16, robot.x) + robot.vx, 101));
-                    robot.y = @intCast(@mod(@as(i16, robot.y) + robot.vy, 103));
+
+        longest_stem = 0;
+        for (0..101) |x| {
+            var cur_stem: u32 = 0;
+            for (0..103) |y| {
+                if (grid[y * 102 + x] == '#') {
+                    cur_stem += 1;
+                    longest_stem = @max(cur_stem, longest_stem);
+                } else {
+                    cur_stem = 0;
                 }
             }
-            n += skip - 1;
         }
     }
 
