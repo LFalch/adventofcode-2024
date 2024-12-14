@@ -31,7 +31,6 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
         std.debug.assert(f.accept(","));
         const vy = f.read_number(i8);
         _ = f.read_space();
-        std.debug.print("{d}, {d}  {d}, {d}\n", .{ x, y, vx, vy });
         robots.append(.{ .x = x, .y = y, .vx = vx, .vy = vy }) catch unreachable;
     }
 
