@@ -2,7 +2,7 @@ const std = @import("std");
 const aoc = @import("aoc");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer _ = gpa.deinit();
     try aoc.main_with_bench(u32, .{gpa.allocator()}, solve);
 }
