@@ -34,12 +34,27 @@ pub const FileData = struct {
     }
 
     pub fn read_number(self: *FileData, int: type) int {
+        const info = @typeInfo(int);
         var out: int = 0;
+        if (info.Int.signedness == .signed) {
+            if (self.file_data[0] == '-') {
+                var n: usize = 1;
+                while (n < self.file_data.len) : (n += 1) {
+                    const c = self.file_data[n];
+                    if (!std.ascii.isDigit(c)) break else {
+                        out = out * 10 - @as(int, @intCast(c - '0'));
+                    }
+                }
+
+                self.file_data = self.file_data[n..];
+                return out;
+            }
+        }
         var n: usize = 0;
         while (n < self.file_data.len) : (n += 1) {
             const c = self.file_data[n];
             if (!std.ascii.isDigit(c)) break else {
-                out = out * 10 + c - '0';
+                out = out * 10 + @as(int, @intCast(c - '0'));
             }
         }
 
