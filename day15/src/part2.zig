@@ -52,18 +52,10 @@ fn solve(fd: aoc.FileData, alloc: std.mem.Allocator) u32 {
         var dx: i2 = 0;
         var dy: i2 = 0;
         switch (c) {
-            '^' => {
-                dy = -1;
-            },
-            '>' => {
-                dx = 1;
-            },
-            'v' => {
-                dy = 1;
-            },
-            '<' => {
-                dx = -1;
-            },
+            '^' => dy = -1,
+            '>' => dx = 1,
+            'v' => dy = 1,
+            '<' => dx = -1,
             '\n' => continue,
             else => unreachable,
         }
@@ -73,7 +65,6 @@ fn solve(fd: aoc.FileData, alloc: std.mem.Allocator) u32 {
         switch (grid[index(nx, ny, w)]) {
             '[', ']' => {
                 if (dy == 0) {
-                    // simple
                     while (grid[index(nx, y, w)] == '[' or grid[index(nx, y, w)] == ']') {
                         nx = nx + dx;
                     }
