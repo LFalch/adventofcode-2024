@@ -4,13 +4,13 @@ const aoc = @import("aoc");
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    try aoc.main_with_bench(u32, .{gpa.allocator()}, solve);
+    try aoc.main_with_bench(Pos, .{gpa.allocator()}, solve);
 }
 
 const initial_walls = 1024;
 const size = 71;
 
-fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
+fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) Pos {
     const alloc = ctx[0];
     const maze = Maze{
         .grid = alloc.alloc(u8, size * size) catch unreachable,
@@ -31,10 +31,8 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
     defer length_map.deinit();
     var queue = std.ArrayList(Entry).init(alloc);
     defer queue.deinit();
-    // queue.append(.{ .pos = .{ .x = 0, .y = 0 }, .length = 0 }) catch unreachable;
-    // pathfind(&queue, &length_map, &maze);
-
-    var old_length: u32 = 0;
+    queue.append(.{ .pos = .{ .x = 0, .y = 0 }, .length = 0 }) catch unreachable;
+    pathfind(&queue, &length_map, &maze);
 
     while (true) {
         const x: i8 = @intCast(f.read_number(u8));
@@ -43,49 +41,41 @@ fn solve(fd: aoc.FileData, ctx: struct { std.mem.Allocator }) u32 {
         _ = f.read_space();
         const p = Pos{ .x = x, .y = y };
         maze.set(p, '#');
-        // const length_to_new_wall = if (length_map.fetchRemove(p)) |kv| kv.value else continue;
 
-        // var queue2 = std.ArrayList(Entry).init(alloc);
-        // defer queue2.deinit();
-        // queue2.append(.{ .pos = p, .length = length_to_new_wall }) catch unreachable;
-
-        // while (queue2.popOrNull()) |e| {
-        //     for ([_]Dir{ .north, .east, .south, .west }) |dir| {
-        //         const n = e.pos.add(dir);
-        //         const l = length_map.get(n);
-        //         if (l == e.length + 1) {
-        //             _ = length_map.remove(n);
-        //             queue2.append(.{ .pos = n, .length = e.length + 1 }) catch unreachable;
-        //         } else if (l == e.length - 1) {
-        //             queue.append(.{ .pos = n, .length = e.length - 1 }) catch unreachable;
-        //         } else {
-        //             std.debug.assert(l == null);
-        //         }
-        //     }
-        // }
         {
-            queue.append(.{ .pos = .{ .x = 0, .y = 0 }, .length = 0 }) catch unreachable;
-            length_map.clearRetainingCapacity();
+            const length_to_new_wall = if (length_map.fetchRemove(p)) |kv| kv.value else continue;
+            var new_edges = std.AutoArrayHashMap(Pos, void).init(alloc);
+            defer new_edges.deinit();
+            queue.append(.{ .pos = p, .length = length_to_new_wall }) catch unreachable;
+
+            while (queue.popOrNull()) |e| {
+                for ([_]Dir{ .north, .east, .south, .west }) |dir| {
+                    const n = e.pos.add(dir);
+                    if (length_map.get(n)) |l| {
+                        if (l == e.length + 1) {
+                            _ = length_map.remove(n);
+                            queue.append(.{ .pos = n, .length = l }) catch unreachable;
+                        } else {
+                            new_edges.put(n, {}) catch unreachable;
+                        }
+                    }
+                }
+            }
+
+            for (new_edges.keys()) |key| {
+                if (length_map.get(key)) |length| {
+                    queue.append(.{ .pos = key, .length = length }) catch unreachable;
+                }
+            }
         }
+
         pathfind(&queue, &length_map, &maze);
         const new_length = length_map.get(.{ .x = (size - 1), .y = (size - 1) });
-        if (new_length != old_length) {
-            if (new_length) |nl| {
-                old_length = nl;
-            }
-            std.debug.print("{?d}\n", .{new_length});
-
-            for (0..size) |i| {
-                std.debug.print("{s}\n", .{maze.grid[size * i .. size * (i + 1)]});
-            }
-            std.debug.print("\n", .{});
-        }
         if (new_length == null) {
-            std.debug.print("{d},{d}\n", .{ x, y });
-            return undefined;
+            return p;
         }
     }
-    return undefined;
+    unreachable;
 }
 
 fn pathfind(queue: *std.ArrayList(Entry), length_map: *std.AutoHashMap(Pos, u32), maze: *const Maze) void {
@@ -143,6 +133,17 @@ const Pos = struct {
             .west => .{ .x = self.x - 1, .y = self.y },
             .north => .{ .x = self.x, .y = self.y - 1 },
         };
+    }
+    pub fn format(
+        self: Pos,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype,
+    ) !void {
+        _ = fmt;
+        _ = options;
+
+        try writer.print("{d},{d}", .{ self.x, self.y });
     }
 };
 const Entry = struct {

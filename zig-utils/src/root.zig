@@ -93,32 +93,32 @@ pub const Timer = struct {
 };
 
 /// Main function that does a benchmark if the answer is given in cmdargs
-pub fn main_with_bench(answer_type: type, ctx: anytype, f: fn (FileData, @TypeOf(ctx)) answer_type) !void {
+pub fn main_with_bench(Answer: type, ctx: anytype, f: fn (FileData, @TypeOf(ctx)) Answer) !void {
     var input_file: ?[]u8 = null;
-    var answer_arg: ?answer_type = null;
+    var answer_arg: ?[]u8 = null;
     if (std.os.argv.len > 1) {
         for (std.os.argv[1..]) |arg| {
             const buf = std.mem.span(arg);
-            const ans = std.fmt.parseInt(answer_type, buf, 10) catch {
+            if (std.mem.endsWith(u8, buf, ".txt")) {
                 input_file = buf;
-                continue;
-            };
-            answer_arg = ans;
+            } else {
+                answer_arg = buf;
+            }
         }
     }
 
     const fd = try read(if (input_file) |p| p else "input.txt");
     if (answer_arg) |answer| {
-        try benchmark(fd, answer, ctx, f);
+        try benchmark(Answer, fd, answer, ctx, f);
     } else {
         const timer = Timer.start();
-        const sum = f(fd, ctx);
+        const answer = f(fd, ctx);
         timer.stop();
-        try std.io.getStdOut().writer().print("{d}\n", .{sum});
+        try std.io.getStdOut().writer().print("{any}\n", .{answer});
     }
 }
 
-pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @TypeOf(ctx)) @TypeOf(answer)) !void {
+pub fn benchmark(Answer: type, fd: FileData, answer: []u8, ctx: anytype, f: fn (FileData, @TypeOf(ctx)) Answer) !void {
     var timer = AvgTimer.init();
     defer timer.deinit();
 
@@ -127,8 +127,10 @@ pub fn benchmark(fd: FileData, answer: anytype, ctx: anytype, f: fn (FileData, @
     while (!timer.is_full() and (timer.next_time < 10 or (std.time.milliTimestamp() - benchmark_start < MAX_BENCHMARK_TIME_MS))) {
         timer.start();
         const calculated = f(fd, ctx);
+        var buf: [1024]u8 = undefined;
+        const printed = try std.fmt.bufPrint(&buf, "{any}", .{calculated});
         timer.stop();
-        if (answer != calculated) {
+        if (!std.mem.eql(u8, printed, answer)) {
             std.debug.panic("incorrect result during benchmark, got {d}\n", .{calculated});
         }
     }
